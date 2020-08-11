@@ -1,0 +1,47 @@
+{
+  "name": "@sagacify/sqs-handler",
+  "version": "1.0.0",
+  "description": "SQS messages handling package",
+  "main": "src/SqsHandler.js",
+  "directories": {
+    "test": "test"
+  },
+  "keywords": [
+    "aws",
+    "sqs",
+    "queue",
+    "message",
+    "messages"
+  ],
+  "author": "@oliviercuyp",
+  "license": "MIT",
+  "scripts": {
+    "format": "semistandard --fix",
+    "test:spec": "mocha --recursive",
+    "test:lint": "semistandard --verbose | snazzy",
+    "test:cover": "nyc --reporter=text-summary --reporter=html npm run test:spec",
+    "test:coveralls": "nyc npm run test:spec && nyc report --reporter=text-lcov | coveralls",
+    "test": "npm run test:lint && npm run test:cover"
+  },
+  "devDependencies": {
+    "aws-sdk": "^2.728.0",
+    "chai": "^4.2.0",
+    "coveralls": "^3.1.0",
+    "mocha": "^8.1.1",
+    "nyc": "^15.1.0",
+    "semistandard": "^14.2.3",
+    "sinon": "^9.0.2",
+    "snazzy": "^8.0.0"
+  },
+  "nyc": {
+    "include": [
+      "src/**/*.js"
+    ]
+  },
+  "semistandard": {
+    "env": {
+      "node": true,
+      "mocha": true
+    }
+  }
+}
