@@ -1,6 +1,6 @@
 {
   "name": "@sagacify/sqs-handler",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "SQS messages handling package",
   "main": "src/SqsHandler.js",
   "directories": {
