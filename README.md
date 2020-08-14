@@ -8,7 +8,7 @@
 ## Description
 
 SqsHandle is a package meant to simplify the handeling of SQS messages.
-It doesn't automatic JSON parsing/stringifying of the message's body,
+It does automatic JSON parsing/stringifying of the message's body,
 attiributes composition and parsing of message's attributes.
 
 ## Installation
