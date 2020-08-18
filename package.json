@@ -15,6 +15,13 @@
   ],
   "author": "@oliviercuyp",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sagacify/sqs-handler.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Sagacify/sqs-handler/issues"
+  },
   "scripts": {
     "format": "semistandard --fix",
     "test:spec": "mocha --recursive",
