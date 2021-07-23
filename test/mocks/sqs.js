@@ -36,37 +36,66 @@ const messageMocks = [
   }
 ];
 
-module.exports.sqsMock = {
-  deleteMessage: () => ({ promise: () => Promise.resolve() }),
-  deleteMessageBatch: () => ({ promise: () => Promise.resolve() }),
-  receiveMessage: ({
+class sqsMock {
+  constructor (options = {}) {
+    this.isEmpty = false;
+    this.options = options;
+  }
+
+  deleteMessage () {
+    return { promise: () => Promise.resolve() };
+  }
+
+  deleteMessageBatch () {
+    return { promise: () => Promise.resolve() };
+  }
+
+  receiveMessage ({
     MaxNumberOfMessages = 1,
     MessageAttributeNames = []
-  }) => ({
-    promise: () => Promise.resolve({
-      Messages: messageMocks
-        .slice(0, MaxNumberOfMessages)
-        .map(
-          messageMock => {
-            const { MessageAttributes, ...baseMessage } = messageMock;
+  }) {
+    return {
+      promise: () => {
+        const promise = Promise.resolve({
+          Messages: messageMocks
+            .slice(0, this.isEmpty ? 0 : MaxNumberOfMessages)
+            .map(
+              messageMock => {
+                const { MessageAttributes, ...baseMessage } = messageMock;
 
-            if (MessageAttributeNames.length > 0) {
-              return {
-                ...baseMessage,
-                MessageAttributes: MessageAttributeNames
-                  .reduce((result, key) => {
-                    result[key] = messageMocks.MessageAttributes[key];
+                if (MessageAttributeNames.length > 0) {
+                  return {
+                    ...baseMessage,
+                    MessageAttributes: MessageAttributeNames
+                      .reduce((result, key) => {
+                        result[key] = messageMocks.MessageAttributes[key];
 
-                    return result;
-                  }, {})
-              };
-            }
+                        return result;
+                      }, {})
+                  };
+                }
 
-            return baseMessage;
-          }
-        )
-    })
-  }),
-  sendMessage: () => ({ promise: () => Promise.resolve() }),
-  sendMessageBatch: () => ({ promise: () => Promise.resolve() })
-};
+                return baseMessage;
+              }
+            )
+        });
+
+        if (this.options.isEmptyAfterReceive === true) {
+          this.isEmpty = true;
+        }
+
+        return promise;
+      }
+    };
+  }
+
+  sendMessage () {
+    return { promise: () => Promise.resolve() };
+  }
+
+  sendMessageBatch () {
+    return { promise: () => Promise.resolve() };
+  }
+}
+
+module.exports.SQSMock = sqsMock;
