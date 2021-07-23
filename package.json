@@ -24,31 +24,37 @@
   },
   "scripts": {
     "format": "semistandard --fix",
-    "test:spec": "mocha --recursive",
-    "test:lint": "semistandard --verbose | snazzy",
+    "test:spec": "LOG_LEVEL=fatal NODE_ENV=test mocha --recursive",
+    "test:lint": "eslint -f stylish .",
     "test:cover": "nyc --reporter=text-summary --reporter=html npm run test:spec",
-    "test:coveralls": "nyc npm run test:spec && nyc report --reporter=text-lcov | coveralls",
+    "test:coveralls": "nyc --reporter=lcov --reporter=text-summary npm run test:spec && nyc report --reporter=text-lcov | coveralls",
     "test": "npm run test:lint && npm run test:cover"
   },
   "devDependencies": {
-    "aws-sdk": "^2.728.0",
-    "chai": "^4.2.0",
-    "coveralls": "^3.1.0",
-    "mocha": "^8.1.1",
+    "@sagacify/eslint-config": "^1.2.0",
+    "aws-sdk": "^2.952.0",
+    "chai": "^4.3.4",
+    "coveralls": "^3.1.1",
+    "eslint": "^7.31.0",
+    "eslint-config-standard": "^16.0.3",
+    "mocha": "^9.0.2",
     "nyc": "^15.1.0",
-    "semistandard": "^14.2.3",
-    "sinon": "^9.0.2",
-    "snazzy": "^8.0.0"
+    "sinon": "^11.1.1"
   },
   "nyc": {
+    "check-coverage": true,
+    "lines": 80,
     "include": [
       "src/**/*.js"
     ]
   },
-  "semistandard": {
-    "env": {
-      "node": true,
-      "mocha": true
-    }
+  "eslintConfig": {
+    "ignorePatterns": [
+      "src/docs/**/*"
+    ],
+    "extends": [
+      "standard",
+      "@sagacify"
+    ]
   }
 }
