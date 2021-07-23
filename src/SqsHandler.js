@@ -1,3 +1,48 @@
+const { Readable, Writable } = require('stream');
+
+const sqsReadable = (handler, options = {}) => new Readable({
+  objectMode: true,
+  highWaterMark: options.MaxNumberOfMessages !== undefined
+    ? options.MaxNumberOfMessages
+    : 10,
+  async read (size) {
+    const { autoDestroy, autoClose, ...receiveOptions } = options;
+    const messages = await handler.receive({
+      ...receiveOptions,
+      MaxNumberOfMessages: size
+    });
+
+    if (messages.length === 0) {
+      if (autoClose === true) {
+        return this.destroy();
+      }
+
+      setImmediate(() => {
+        this._read(size);
+      });
+    }
+
+    for (const message of messages) {
+      this.push(message);
+      if (autoDestroy === true) {
+        await handler.destroy(message.ReceiptHandle);
+      }
+    }
+  }
+});
+
+const sqsWritable = (handler, options = {}) => new Writable({
+  objectMode: true,
+  async write (chunk, _encoding, callback) {
+    try {
+      await handler.send(chunk, options);
+    } catch (error) {
+      return callback(error);
+    }
+    callback();
+  }
+});
+
 const composeMessageAttributes = attributes =>
   Object.keys(attributes).reduce((result, key) => {
     if (typeof attributes[key] === 'string') {
@@ -145,5 +190,13 @@ module.exports.SqsHandler = class SqsHandler {
     };
 
     await this.sqs.deleteMessageBatch(params).promise();
+  }
+
+  readableStream (options) {
+    return sqsReadable(this, options);
+  }
+
+  writableStream (options) {
+    return sqsWritable(this, options);
   }
 };
