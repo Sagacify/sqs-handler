@@ -50,13 +50,13 @@ await sqsHandler.send({ data: 'value' }, {
 // Send several messages
 await sqsHandler.sendBatch([
   {
-    Id: 1,
+    Id: '1',
     MessageBody: { data: 'value1' }
   }, {
-    Id: 2,
+    Id: '2',
     MessageBody: { data: 'value2' }
   }, , {
-    Id: 3,
+    Id: '3',
     MessageBody: { data: 'value3' }
   }
 ]);
