@@ -2,7 +2,7 @@ const expect = require('chai').expect;
 const { SqsHandler } = require('../../src/SqsHandler');
 const { SQSMock } = require('../mocks/sqs');
 const sinon = require('sinon');
-const { Readable, Writable } = require('stream');
+const { Readable } = require('stream');
 
 describe('SqsHandler', () => {
   describe('readableStream', () => {
@@ -101,30 +101,6 @@ describe('SqsHandler', () => {
       sandbox.restore();
 
       expect(spy.callCount).equals(1);
-    });
-  });
-
-  describe('writableStream', () => {
-    it('should returns a Writable', () => {
-      const sqsHandler = new SqsHandler(new SQSMock(), 'https://fake-queue');
-      expect(sqsHandler.writableStream()).instanceOf(Writable);
-    });
-
-    it('should push written messages to queue', () => {
-      const sqsMock = new SQSMock();
-      const sandbox = sinon.createSandbox();
-      const spy = sandbox.spy(sqsMock, 'sendMessage');
-      const sqsHandler = new SqsHandler(sqsMock, 'https://fake-queue');
-      const writable = sqsHandler.writableStream();
-
-      writable.write({
-        foo: 'bar'
-      });
-
-      expect(spy.getCall(0).args).to.deep.equals([{
-        MessageBody: '{"foo":"bar"}',
-        QueueUrl: 'https://fake-queue'
-      }]);
     });
   });
 });
