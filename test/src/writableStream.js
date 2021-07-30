@@ -45,11 +45,11 @@ describe('writableStream', () => {
     expect(spy.getCall(0).args).to.deep.equals([{
       Entries: [
         {
-          Id: 1,
+          Id: '1',
           MessageBody: '{"foo":"bar"}'
         },
         {
-          Id: 2,
+          Id: '2',
           MessageBody: '{"bar":"baz"}'
         }
       ],

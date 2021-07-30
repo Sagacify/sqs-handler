@@ -46,7 +46,7 @@ const sqsWritable = (handler, options = {}) => {
           if (entries.length >= size) {
             await handler.sendBatch(
               entries.map((entry, index) => (
-                { Id: index + 1, MessageBody: entry, ...messageOptions }
+                { Id: `${index + 1}`, MessageBody: entry, ...messageOptions }
               ))
             );
             entries = [];
