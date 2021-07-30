@@ -283,7 +283,11 @@ see **receive** for other options details.
 returns a writable stream to the SQS queue.
 Each message written to this stream will be pushed to the queue with the specified options.
 
-see **send** for options details.
+*Options:*
+
+- batchSize: set the number of messages to be sent per batch (default: 1)
+
+see **send** for other options details.
 
 ## Npm scripts
 

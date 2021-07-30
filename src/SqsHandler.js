@@ -31,17 +31,34 @@ const sqsReadable = (handler, options = {}) => new Readable({
   }
 });
 
-const sqsWritable = (handler, options = {}) => new Writable({
-  objectMode: true,
-  async write (chunk, _encoding, callback) {
-    try {
-      await handler.send(chunk, options);
-    } catch (error) {
-      return callback(error);
+const sqsWritable = (handler, options = {}) => {
+  let entries = [];
+  return new Writable({
+    objectMode: true,
+    async write (chunk, _encoding, callback) {
+      try {
+        const { batchSize, ...messageOptions } = options;
+        const size = batchSize !== undefined ? batchSize : 1;
+        if (size === 1) {
+          await handler.send(chunk, messageOptions);
+        } else {
+          entries.push(chunk);
+          if (entries.length >= size) {
+            await handler.sendBatch(
+              entries.map((entry, index) => (
+                { Id: index + 1, MessageBody: entry, ...messageOptions }
+              ))
+            );
+            entries = [];
+          }
+        }
+      } catch (error) {
+        return callback(error);
+      }
+      callback();
     }
-    callback();
-  }
-});
+  });
+};
 
 const composeMessageAttributes = attributes =>
   Object.keys(attributes).reduce((result, key) => {
