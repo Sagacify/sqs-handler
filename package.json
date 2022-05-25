@@ -1,6 +1,6 @@
 {
   "name": "@sagacify/sqs-handler",
-  "version": "1.2.1",
+  "version": "2.0.0",
   "description": "SQS messages handling package",
   "main": "build/SqsHandler.js",
   "directories": {
@@ -65,7 +65,9 @@
     "typescript": "^4.6.4"
   },
   "eslintConfig": {
-    "ignorePatterns": ["**/build/*.js"],
+    "ignorePatterns": [
+      "**/build/*.js"
+    ],
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
       "project": "./tsconfig.json"
