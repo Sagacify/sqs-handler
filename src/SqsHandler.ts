@@ -249,7 +249,7 @@ export class SqsHandler {
 
 export type SimpleMessageAttributes = Record<string, undefined | string | SQS.Binary>;
 export type SimpleMessage = Omit<SQS.Message, 'Body' | 'MessageAttributes'> & {
-  Body: unknown;
+  Body: any;
   MessageAttributes?: SimpleMessageAttributes;
 };
 export type ReceiveOptions = Omit<
@@ -267,7 +267,7 @@ export type SendBatchEntry = Omit<
   SQS.SendMessageBatchRequestEntry,
   'MessageAttributes' | 'MessageBody'
 > & {
-  MessageBody: unknown;
+  MessageBody: any;
   MessageAttributes?: SimpleMessageAttributes;
 };
 export type SqsReadableOptions = ReceiveOptions & {
