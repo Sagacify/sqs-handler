@@ -7,7 +7,7 @@
     "test": "test"
   },
   "engines": {
-    "node": ">=12.0.0"
+    "node": ">=16.0.0"
   },
   "keywords": [
     "aws",
@@ -38,18 +38,18 @@
     "test": "npm run test:lint && npm run test:types && npm run test:cover"
   },
   "peerDependencies": {
-    "aws-sdk": "^2.0.0"
+    "@aws-sdk/client-sqs": "^3.667.0"
   },
   "devDependencies": {
+    "@aws-sdk/client-sqs": "^3.667.0",
     "@sagacify/eslint-config": "^1.2.0",
     "@types/chai": "^4.3.1",
-    "@types/mocha": "^9.1.1",
-    "@types/node": "^17.0.35",
+    "@types/mocha": "^10.0.9",
+    "@types/node": "^20.16.11",
     "@types/sinon": "^10.0.11",
     "@typescript-eslint/eslint-plugin": "^5.25.0",
     "@typescript-eslint/parser": "^5.25.0",
-    "aws-sdk": "^2.1140.0",
-    "aws-sdk-mock": "^5.7.0",
+    "aws-sdk-client-mock": "^4.0.2",
     "chai": "^4.3.6",
     "eslint": "^8.16.0",
     "eslint-config-prettier": "^8.5.0",
@@ -57,12 +57,12 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-promise": "^6.0.0",
-    "mocha": "^10.0.0",
+    "mocha": "^10.7.3",
     "nyc": "^15.1.0",
     "prettier": "^2.6.2",
-    "sinon": "^14.0.0",
     "ts-node": "^10.8.0",
-    "typescript": "^4.6.4"
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3"
   },
   "eslintConfig": {
     "ignorePatterns": [
@@ -95,7 +95,8 @@
     "arrowParens": "always"
   },
   "mocha": {
-    "require": "ts-node/register",
+    "require": "tsx",
+    "exit": true,
     "spec": [
       "test/**/*.ts"
     ],

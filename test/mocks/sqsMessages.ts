@@ -1,5 +1,5 @@
 export default {
-  in: [
+  unparsed: [
     {
       ReceiptHandle: 'a1ef6j',
       Body: '{"value": 100}',
@@ -37,7 +37,7 @@ export default {
       }
     }
   ],
-  out: [
+  parsed: [
     {
       ReceiptHandle: 'a1ef6j',
       Body: { value: 100 },

@@ -1,51 +1,44 @@
 import { expect } from 'chai';
-import AWS from 'aws-sdk';
-import AWSMock from 'aws-sdk-mock';
-import sinon from 'sinon';
-import { SqsHandler } from '../../src/SqsHandler';
+import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
+import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
+import { SQSHandler } from '../../src/SQSHandler';
 
-describe('SqsHandler.send', () => {
-  let sandbox: sinon.SinonSandbox;
+describe('SQSHandler.send', () => {
+  let sqsClientMock: AwsClientStub<SQSClient>;
 
   beforeEach(() => {
-    AWSMock.setSDKInstance(AWS);
-    sandbox = sinon.createSandbox();
-  });
-
-  afterEach(() => {
-    AWSMock.restore();
-    sandbox.restore();
+    const sqsClient = new SQSClient({});
+    sqsClientMock = mockClient(sqsClient);
   });
 
   it('should send a message', async () => {
-    const sendMessageSpy = sandbox.spy((_params, callback) => {
-      callback(null, { MessageId: '123' });
-    });
-    AWSMock.mock('SQS', 'sendMessage', sendMessageSpy);
+    const clientResponse = { MessageId: '123' };
+    sqsClientMock.on(SendMessageCommand).resolvesOnce(clientResponse);
 
-    const sqsMock = new AWS.SQS();
-    const sqsHandler = new SqsHandler(sqsMock, 'https://fake-queue');
+    const sqsHandler = new SQSHandler<Record<string, string>>(
+      sqsClientMock as unknown as SQSClient,
+      'https://fake-queue'
+    );
 
     await sqsHandler.send({ data: 'value' });
 
-    const spyCall = sendMessageSpy.getCall(0);
-
-    expect(spyCall.args[0]).to.deep.equal({
+    expect(sqsClientMock.commandCalls(SendMessageCommand).length).equal(1);
+    expect(sqsClientMock.commandCalls(SendMessageCommand)[0].args[0].input).deep.equal({
       QueueUrl: 'https://fake-queue',
       MessageBody: '{"data":"value"}'
     });
   });
 
   it('should send a message with attributes and ids', async () => {
-    const sendMessageSpy = sandbox.spy((_params, callback) => {
-      callback(null, { MessageId: '123' });
-    });
-    AWSMock.mock('SQS', 'sendMessage', sendMessageSpy);
+    const clientResponse = { MessageId: '123' };
+    sqsClientMock.on(SendMessageCommand).resolvesOnce(clientResponse);
 
-    const sqsMock = new AWS.SQS();
-    const sqsHandler = new SqsHandler(sqsMock, 'https://fake-queue');
+    const sqsHandler = new SQSHandler<Record<string, string>>(
+      sqsClientMock as unknown as SQSClient,
+      'https://fake-queue'
+    );
 
-    await sqsHandler.send(
+    const actual = await sqsHandler.send(
       { data: 'value' },
       {
         MessageAttributes: {
@@ -58,9 +51,7 @@ describe('SqsHandler.send', () => {
       }
     );
 
-    const spyCall = sendMessageSpy.getCall(0);
-
-    expect(spyCall.args[0]).to.deep.equal({
+    expect(sqsClientMock.commandCalls(SendMessageCommand)[0].args[0].input).deep.equal({
       QueueUrl: 'https://fake-queue',
       MessageBody: '{"data":"value"}',
       MessageGroupId: '123',
@@ -80,5 +71,6 @@ describe('SqsHandler.send', () => {
         }
       }
     });
+    expect(actual).deep.equal(clientResponse);
   });
 });

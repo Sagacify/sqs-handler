@@ -1,15 +1,14 @@
-# SqsHandler
+# SQSHandler
 
-[![CircleCI](https://circleci.com/gh/Sagacify/sqs-handler.svg?style=svg)](https://circleci.com/gh/Sagacify/sqs-handler)
 [![Coverage Status](https://coveralls.io/repos/github/Sagacify/sqs-handler/badge.svg?branch=master)](https://coveralls.io/github/Sagacify/sqs-handler?branch=master)
 [![npm version](https://img.shields.io/npm/v/@sagacify/sqs-handler.svg)](https://www.npmjs.com/package/@sagacify/sqs-handler)
-[![Dependency Status](https://img.shields.io/david/Sagacify/sqs-handler.svg?style=flat-square)](https://david-dm.org/Sagacify/sqs-handler)
 
 ## Description
 
-SqsHandle is a package meant to simplify the handeling of SQS messages.
+SQSHandler is a package meant to simplify the handeling of SQS messages.
 It does automatic JSON parsing/stringifying of the message's body,
 attiributes composition and parsing of message's attributes.
+This package has a peer-dependency on the AWS sdk v3.
 
 ## Installation
 
@@ -21,17 +20,13 @@ $ npm install @sagacify/sqs-handler
 
 ### Import in your project
 ```js
-const AWS = require('aws-sdk');
-const { SqsHandler } = require('@sagacify/sqs-handler');
+import { SQSClient } from '@aws-sdk/client-sqs';
+import { SQSHandler } from '@sagacify/sqs-handler';
 
-const sqsInstance = new AWS.SQS({
-    accessKeyId: 'your_access_key_id',
-    secretAccessKey: 'your_secret_access_key',
-    region: 'an_aws_region'
-})
+const sqsClient = new SQSClient({ region: 'eu-west-1'});
 
-const sqsHandler = new SqsHandler(
-  sqsInstance,
+const sqsHandler = new SQSHandler<{ data: string }>(
+  sqsClient,
   'https://sqs.eu-west-1.amazonaws.com/23452042942/some-sqs-queue', {
     VisibilityTimeout: 120,
     WaitTimeSeconds: 0
@@ -101,17 +96,13 @@ await sqsHandler.destroyBatch([
 ### Readable Stream Usage
 
 ```js
-const AWS = require('aws-sdk');
-const { SqsHandler } = require('@sagacify/sqs-handler');
+import { SQSClient } from '@aws-sdk/client-sqs';
+import { SQSHandler } from '@sagacify/sqs-handler';
 
-const sqsInstance = new AWS.SQS({
-    accessKeyId: 'your_access_key_id',
-    secretAccessKey: 'your_secret_access_key',
-    region: 'an_aws_region'
-})
+const sqsClient = new SQSClient({ region: 'eu-west-1'});
 
-const sqsHandler = new SqsHandler(
-  sqsInstance,
+const sqsHandler = new SQSHandler<{ data: string }>(
+  sqsClient,
   'https://sqs.eu-west-1.amazonaws.com/23452042942/some-sqs-queue', {
     VisibilityTimeout: 120,
     WaitTimeSeconds: 0
@@ -132,16 +123,12 @@ autoDestroyReadable.on('data', (message) => console.log(message));
 ### Writable Stream Usage
 
 ```js
-const AWS = require('aws-sdk');
-const { SqsHandler } = require('@sagacify/sqs-handler');
+import { SQSClient } from '@aws-sdk/client-sqs';
+import { SQSHandler } from '@sagacify/sqs-handler';
 
-const sqsInstance = new AWS.SQS({
-    accessKeyId: 'your_access_key_id',
-    secretAccessKey: 'your_secret_access_key',
-    region: 'an_aws_region'
-})
+const sqsClient = new SQSClient({ region: 'eu-west-1'});
 
-const sqsHandler = new SqsHandler(
+const sqsHandler = new SQSHandler<{ data: string }>(
   sqsInstance,
   'https://sqs.eu-west-1.amazonaws.com/23452042942/some-sqs-queue', {
     VisibilityTimeout: 120,
@@ -158,9 +145,9 @@ writable.write({
 
 ### API
 
-**constructor(sqs, queueUrl, options)**
+**constructor(sqsClient, queueUrl, options)**
 
-- sqs: an AWS.SQS instance
+- sqsClient: an SQSClient instance
 - queueUrl: url of the queue
 - options:
   - VisibilityTimeout: visibility timeout in seconds (default: 60)
@@ -168,13 +155,13 @@ writable.write({
 
 **receive(options)**
 
-Equivalent of [AWS.SQS.receiveMessage](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/SQS.html#receiveMessage-property) with automatique parsing.
+Equivalent of [ReceiveMessageCommand](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/sqs/command/ReceiveMessageCommand) with automatique parsing.
 
 *Options differences:*
 
- - QueueUrl: useless, SqsHandler.queueUrl will be used instead
- - VisibilityTimeout: SqsHandler.visibilityTimeout will be used instead
- - WaitTimeSeconds: SqsHandler.waitTimeSeconds will be used instead
+ - QueueUrl: useless, SQSHandler.queueUrl will be used instead
+ - VisibilityTimeout: SQSHandler.visibilityTimeout will be used instead
+ - WaitTimeSeconds: SQSHandler.waitTimeSeconds will be used instead
 
  *Response differrences:*
 
@@ -182,15 +169,15 @@ Equivalent of [AWS.SQS.receiveMessage](https://docs.aws.amazon.com/AWSJavaScript
  - Messages[].Body: automatically JSON parsed
  - Messages[].MessageAttributes: automatically parsed as simple object with the right type
 
- **receive(options)**
+ **receiveOne(options)**
 
-Equivalent of [AWS.SQS.receiveMessage](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/SQS.html#receiveMessage-property) with automatique parsing.
+Equivalent of [ReceiveMessageCommand](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/sqs/command/ReceiveMessageCommand) for one message with automatique parsing.
 
 *Options differences:*
 
- - QueueUrl: useless, SqsHandler.queueUrl will be used instead
- - VisibilityTimeout: SqsHandler.visibilityTimeout will be used instead
- - WaitTimeSeconds: SqsHandler.waitTimeSeconds will be used instead
+ - QueueUrl: useless, SQSHandler.queueUrl will be used instead
+ - VisibilityTimeout: SQSHandler.visibilityTimeout will be used instead
+ - WaitTimeSeconds: SQSHandler.waitTimeSeconds will be used instead
  - MaxNumberOfMessages: forced at 1
 
  *Response differrences:*
@@ -201,13 +188,13 @@ Equivalent of [AWS.SQS.receiveMessage](https://docs.aws.amazon.com/AWSJavaScript
 
 **send(messageBody, options)**
 
-Equivalent of [AWS.SQS.sendMessage](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/SQS.html#sendMessage-property) with automatique composition.
+Equivalent of [SendMessageCommand](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/sqs/command/SendMessageCommand) with automatique composition.
 
 *Options differences:*
 
- - QueueUrl: useless, SqsHandler.queueUrl will be used instead
- - VisibilityTimeout: SqsHandler.visibilityTimeout will be used instead
- - WaitTimeSeconds: SqsHandler.waitTimeSeconds will be used instead
+ - QueueUrl: useless, SQSHandler.queueUrl will be used instead
+ - VisibilityTimeout: SQSHandler.visibilityTimeout will be used instead
+ - WaitTimeSeconds: SQSHandler.waitTimeSeconds will be used instead
  - MessageAttributes: simple object that will be automatically composed in { DataType, StringValue|BinaryValue }
  - MessageBody: taken from messageBody and automatically JSON stringified
 
@@ -217,13 +204,13 @@ Equivalent of [AWS.SQS.sendMessage](https://docs.aws.amazon.com/AWSJavaScriptSDK
 
 **sendBatch(entries)**
 
-Equivalent of [AWS.SQS.sendBatchMessage](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/SQS.html#sendMessageBatch-property) with automatique composition.
+Equivalent of [SendMessageBatchCommand](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/sqs/command/SendMessageBatchCommand) with automatique composition.
 
 *Options differences:*
 
- - entries[].QueueUrl: useless, SqsHandler.queueUrl will be used instead
- - entries[].VisibilityTimeout: SqsHandler.visibilityTimeout will be used instead
- - entries[].WaitTimeSeconds: SqsHandler.waitTimeSeconds will be used instead
+ - entries[].QueueUrl: useless, SQSHandler.queueUrl will be used instead
+ - entries[].VisibilityTimeout: SQSHandler.visibilityTimeout will be used instead
+ - entries[].WaitTimeSeconds: SQSHandler.waitTimeSeconds will be used instead
  - entries[].MessageAttributes: simple object that will be automatically composed in { DataType, StringValue|BinaryValue }
  - entries[].MessageBody: taken from messageBody and automatically JSON stringified
 
@@ -233,13 +220,13 @@ Equivalent of [AWS.SQS.sendBatchMessage](https://docs.aws.amazon.com/AWSJavaScri
 
 **detroy(receiptHandle)**
 
-Equivalent of [AWS.SQS.deleteMessage](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/SQS.html#deleteMessage-property) with automatique composition.
+Equivalent of [DeleteMessageCommand](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/sqs/command/DeleteMessageCommand) with automatique composition.
 
 *Options differences:*
 
- - QueueUrl: useless, SqsHandler.queueUrl will be used instead
- - VisibilityTimeout: SqsHandler.visibilityTimeout will be used instead
- - WaitTimeSeconds: SqsHandler.waitTimeSeconds will be used instead
+ - QueueUrl: useless, SQSHandler.queueUrl will be used instead
+ - VisibilityTimeout: SQSHandler.visibilityTimeout will be used instead
+ - WaitTimeSeconds: SQSHandler.waitTimeSeconds will be used instead
 
  *Response differrences:*
 
@@ -247,21 +234,21 @@ Equivalent of [AWS.SQS.deleteMessage](https://docs.aws.amazon.com/AWSJavaScriptS
 
 **detroyBatch(receiptHandle)**
 
-Equivalent of [AWS.SQS.deleteMessageBatch](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/SQS.html#deleteMessageBatch-property) with automatique composition.
+Equivalent of [DeleteMessageBatchCommand](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/sqs/command/DeleteMessageBatchCommand) with automatique composition.
 
 *Options differences:*
 
- - entries[].QueueUrl: useless, SqsHandler.queueUrl will be used instead
- - entries[].VisibilityTimeout: SqsHandler.visibilityTimeout will be used instead
- - entries[].WaitTimeSeconds: SqsHandler.waitTimeSeconds will be used instead
+ - entries[].QueueUrl: useless, SQSHandler.queueUrl will be used instead
+ - entries[].VisibilityTimeout: SQSHandler.visibilityTimeout will be used instead
+ - entries[].WaitTimeSeconds: SQSHandler.waitTimeSeconds will be used instead
 
  *Response differrences:*
 
 (None)
 
-- sendBatch(entries) equivalent of AWS.SQS.sendMessageBatch with automatique composing
-- destroy(receiptHandle) fully equivalent of AWS.SQS.deleteMessage
-- destroyBatch(entries) fully equivalent of AWS.SQS.deleteMessageBatch
+- sendBatch(entries) equivalent of SQSClient.sendMessageBatch with automatique composing
+- destroy(receiptHandle) fully equivalent of SQSClient.deleteMessage
+- destroyBatch(entries) fully equivalent of SQSClient.deleteMessageBatch
 
 Only message related operations have been implemented.
 For queue related operations use directly the SQS instance.

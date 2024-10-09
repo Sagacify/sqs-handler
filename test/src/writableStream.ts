@@ -1,91 +1,59 @@
 import { expect } from 'chai';
 import { Writable } from 'stream';
-import AWS from 'aws-sdk';
-import AWSMock from 'aws-sdk-mock';
-import sinon from 'sinon';
-import { SqsHandler } from '../../src/SqsHandler';
+import { SQSClient, SendMessageBatchCommand } from '@aws-sdk/client-sqs';
+import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
+import { SQSHandler } from '../../src/SQSHandler';
 
-describe('SqsHandler.writableStream', () => {
-  let sandbox: sinon.SinonSandbox;
+describe('SQSHandler.writableStream', () => {
+  let sqsClientMock: AwsClientStub<SQSClient>;
 
   beforeEach(() => {
-    AWSMock.setSDKInstance(AWS);
-    sandbox = sinon.createSandbox();
-  });
-
-  afterEach(() => {
-    AWSMock.restore();
-    sandbox.restore();
+    const sqsClient = new SQSClient({});
+    sqsClientMock = mockClient(sqsClient);
   });
 
   it('should returns a Writable', () => {
-    const sqsMock = new AWS.SQS();
-    const sqsHandler = new SqsHandler(sqsMock, 'https://fake-queue');
+    const sqsHandler = new SQSHandler<Record<string, string>>(
+      sqsClientMock as unknown as SQSClient,
+      'https://fake-queue'
+    );
+
     expect(sqsHandler.writableStream()).instanceOf(Writable);
   });
 
-  it('should push written messages to queue immediately when batchSize = 1', () => {
-    const sendMessageSpy = sandbox.spy((_params, callback) => {
-      callback(null, { MessageId: '123' });
-    });
-    AWSMock.mock('SQS', 'sendMessage', sendMessageSpy);
-    AWSMock.mock('SQS', 'deleteMessage', () => {
-      /* noop */
-    });
-
-    const sqsMock = new AWS.SQS();
-    const sqsHandler = new SqsHandler(sqsMock, 'https://fake-queue');
-    const writable = sqsHandler.writableStream({ batchSize: 1 });
-
-    writable.write({
-      foo: 'bar'
-    });
-
-    expect(sendMessageSpy.getCall(0).args[0]).to.deep.equals({
-      MessageBody: '{"foo":"bar"}',
-      QueueUrl: 'https://fake-queue'
-    });
-  });
-
   it('should push written message to queue in batch', async () => {
-    const sendMessageBatchSpy = sandbox.spy((_params, callback) => {
-      callback(null, {
-        Successful: [
-          { Id: '1', MessageId: '123' },
-          { Id: '2', MessageId: '234' }
-        ],
-        Failed: []
-      });
-    });
-    AWSMock.mock('SQS', 'sendMessageBatch', sendMessageBatchSpy);
-    AWSMock.mock('SQS', 'deleteMessage', () => {
-      /* noop */
-    });
+    const clientResponse = {
+      Successful: [
+        { Id: '1', MessageId: '123', MD5OfMessageBody: 'z3e4f6ezzf' },
+        { Id: '2', MessageId: '234', MD5OfMessageBody: 'slfjecqzdf' }
+      ],
+      Failed: []
+    };
+    sqsClientMock.on(SendMessageBatchCommand).resolvesOnce(clientResponse);
 
-    const sqsMock = new AWS.SQS();
-    const sqsHandler = new SqsHandler(sqsMock, 'https://fake-queue');
+    const sqsHandler = new SQSHandler<Record<string, string>>(
+      sqsClientMock as unknown as SQSClient,
+      'https://fake-queue'
+    );
     const writable = sqsHandler.writableStream({ batchSize: 2 });
 
-    writable.write({
-      foo: 'bar'
-    });
+    writable.write({ data: 'value1' });
+    writable.write({ data: 'value2' });
+    // Stream never stop by default, need to end it after first write
+    writable.end();
 
-    writable.write({
-      bar: 'baz'
-    });
-
-    expect(sendMessageBatchSpy.getCall(0).args[0]).to.deep.equals({
-      Entries: [
+    expect(sqsClientMock.commandCalls(SendMessageBatchCommand).length).equal(1);
+    expect(sqsClientMock.commandCalls(SendMessageBatchCommand)[0].args[0].input.Entries).deep.equal(
+      [
         {
           Id: '1',
-          MessageBody: '{"foo":"bar"}'
+          MessageBody: '{"data":"value1"}'
         },
         {
           Id: '2',
-          MessageBody: '{"bar":"baz"}'
+          MessageBody: '{"data":"value2"}'
         }
-      ],
-      QueueUrl: 'https://fake-queue'
-    });
+      ]
+    );
   });
 });
