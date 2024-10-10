@@ -1,3 +1,10 @@
+## [3.0.1](https://github.com/Sagacify/sqs-handler/compare/v3.0.0...v3.0.1) (2024-10-10)
+
+
+### Bug Fixes
+
+* **npm:** correct package.json main attribute ([4335b83](https://github.com/Sagacify/sqs-handler/commit/4335b834db086f00d44cc5c780c325ad486a83bf))
+
 # [3.0.0](https://github.com/Sagacify/sqs-handler/compare/v2.0.1...v3.0.0) (2024-10-10)
 
 
