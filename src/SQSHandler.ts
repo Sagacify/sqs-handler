@@ -27,6 +27,7 @@ export type ReceiveOptions = Omit<
   ReceiveMessageCommandInput,
   'QueueUrl' | 'VisibilityTimeout' | 'WaitTimeSeconds'
 >;
+export type ReceiveOneOptions = Omit<ReceiveOptions, 'MaxNumberOfMessages'>;
 export type SendOptions = Omit<
   SendMessageCommandInput,
   'QueueUrl' | 'MessageAttributes' | 'MessageBody'
@@ -226,8 +227,9 @@ export class SQSHandler<ParsedBody> {
     return parsedMessages;
   }
 
-  async receiveOne(): Promise<ParsedMessage<ParsedBody> | null> {
+  async receiveOne(options: ReceiveOneOptions = {}): Promise<ParsedMessage<ParsedBody> | null> {
     const command = new ReceiveMessageCommand({
+      ...options,
       QueueUrl: this.queueUrl,
       MaxNumberOfMessages: 1,
       VisibilityTimeout: this.visibilityTimeout,
