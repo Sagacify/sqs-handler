@@ -1,38 +1,32 @@
 import { expect } from 'chai';
-import AWS from 'aws-sdk';
-import AWSMock from 'aws-sdk-mock';
-import sinon from 'sinon';
-import { SqsHandler } from '../../src/SqsHandler';
+import { SQSClient, SendMessageBatchCommand } from '@aws-sdk/client-sqs';
+import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
+import { SQSHandler } from '../../src/SQSHandler';
 
-describe('SqsHandler.sendBatch', () => {
-  let sandbox: sinon.SinonSandbox;
+describe('SQSHandler.sendBatch', () => {
+  let sqsClientMock: AwsClientStub<SQSClient>;
 
   beforeEach(() => {
-    AWSMock.setSDKInstance(AWS);
-    sandbox = sinon.createSandbox();
-  });
-
-  afterEach(() => {
-    AWSMock.restore();
-    sandbox.restore();
+    const sqsClient = new SQSClient({});
+    sqsClientMock = mockClient(sqsClient);
   });
 
   it('should send a batch of message', async () => {
-    const sendMessageBatchSpy = sandbox.spy((_params, callback) => {
-      callback(null, {
-        Successful: [
-          { Id: '1', MessageId: '123' },
-          { Id: '2', MessageId: '234' }
-        ],
-        Failed: []
-      });
-    });
-    AWSMock.mock('SQS', 'sendMessageBatch', sendMessageBatchSpy);
+    const clientResponse = {
+      Successful: [
+        { Id: '1', MessageId: '123', MD5OfMessageBody: 'z3e4f6ezzf' },
+        { Id: '2', MessageId: '234', MD5OfMessageBody: 'slfjecqzdf' }
+      ],
+      Failed: []
+    };
+    sqsClientMock.on(SendMessageBatchCommand).resolvesOnce(clientResponse);
 
-    const sqsMock = new AWS.SQS();
-    const sqsHandler = new SqsHandler(sqsMock, 'https://fake-queue');
+    const sqsHandler = new SQSHandler<Record<string, string>>(
+      sqsClientMock as unknown as SQSClient,
+      'https://fake-queue'
+    );
 
-    await sqsHandler.sendBatch([
+    const actual = await sqsHandler.sendBatch([
       {
         Id: '1',
         MessageBody: { data: 'value1' }
@@ -43,11 +37,9 @@ describe('SqsHandler.sendBatch', () => {
       }
     ]);
 
-    const spyCall = sendMessageBatchSpy.getCall(0);
-
-    expect(spyCall.args[0]).to.deep.equal({
-      QueueUrl: 'https://fake-queue',
-      Entries: [
+    expect(sqsClientMock.commandCalls(SendMessageBatchCommand).length).equal(1);
+    expect(sqsClientMock.commandCalls(SendMessageBatchCommand)[0].args[0].input.Entries).deep.equal(
+      [
         {
           Id: '1',
           MessageBody: '{"data":"value1"}'
@@ -57,6 +49,7 @@ describe('SqsHandler.sendBatch', () => {
           MessageBody: '{"data":"value2"}'
         }
       ]
-    });
+    );
+    expect(actual).deep.equal(clientResponse);
   });
 });

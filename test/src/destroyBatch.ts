@@ -1,32 +1,31 @@
 import { expect } from 'chai';
-import AWSMock from 'aws-sdk-mock';
-import AWS from 'aws-sdk';
-import sinon from 'sinon';
-import { SqsHandler } from '../../src/SqsHandler';
+import { DeleteMessageBatchCommand, SQSClient } from '@aws-sdk/client-sqs';
+import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
+import { SQSHandler } from '../../src/SQSHandler';
 
-describe('SqsHandler.detroyBatch', () => {
-  let sandbox: sinon.SinonSandbox;
+describe('SQSHandler.detroyBatch', () => {
+  let sqsClientMock: AwsClientStub<SQSClient>;
 
   beforeEach(() => {
-    AWSMock.setSDKInstance(AWS);
-    sandbox = sinon.createSandbox();
-  });
-
-  afterEach(() => {
-    AWSMock.restore();
-    sandbox.restore();
+    const sqsClient = new SQSClient({});
+    sqsClientMock = mockClient(sqsClient);
   });
 
   it('should delete a batch of messages', async () => {
-    const deleteMessageBatchSpy = sandbox.spy((_params, callback) => {
-      callback(null, 'success');
-    });
-    AWSMock.mock('SQS', 'deleteMessageBatch', deleteMessageBatchSpy);
+    const clientResponse = {
+      Successful: [
+        { Id: '1', MessageId: '123', MD5OfMessageBody: 'z3e4f6ezzf' },
+        { Id: '2', MessageId: '234', MD5OfMessageBody: 'slfjecqzdf' }
+      ],
+      Failed: []
+    };
+    sqsClientMock.on(DeleteMessageBatchCommand).resolves(clientResponse);
+    const sqsHandler = new SQSHandler<Record<string, string>>(
+      sqsClientMock as unknown as SQSClient,
+      'https://fake-queue'
+    );
 
-    const sqsMock = new AWS.SQS();
-    const sqsHandler = new SqsHandler(sqsMock, 'https://fake-queue');
-
-    await sqsHandler.destroyBatch([
+    const actual = await sqsHandler.destroyBatch([
       {
         Id: '1',
         ReceiptHandle: 'a13b'
@@ -37,20 +36,7 @@ describe('SqsHandler.detroyBatch', () => {
       }
     ]);
 
-    const spyCall = deleteMessageBatchSpy.getCall(0);
-
-    expect(spyCall.args[0]).to.deep.equal({
-      QueueUrl: 'https://fake-queue',
-      Entries: [
-        {
-          Id: '1',
-          ReceiptHandle: 'a13b'
-        },
-        {
-          Id: '2',
-          ReceiptHandle: 'b1ef6j'
-        }
-      ]
-    });
+    expect(sqsClientMock.commandCalls(DeleteMessageBatchCommand).length).equal(1);
+    expect(actual).deep.equal(clientResponse);
   });
 });

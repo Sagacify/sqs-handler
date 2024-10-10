@@ -1,21 +1,27 @@
 import { expect } from 'chai';
-import AWSMock from 'aws-sdk-mock';
-import AWS from 'aws-sdk';
-import { SqsHandler } from '../../src/SqsHandler';
+import { SQSClient } from '@aws-sdk/client-sqs';
+import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
+import { SQSHandler } from '../../src/SQSHandler';
 
-describe('SqsHandler', () => {
+describe('SQSHandler', () => {
+  let sqsClientMock: AwsClientStub<SQSClient>;
+
   beforeEach(() => {
-    AWSMock.setSDKInstance(AWS);
+    const sqsClient = new SQSClient({});
+    sqsClientMock = mockClient(sqsClient);
   });
 
   afterEach(() => {
-    AWSMock.restore();
+    sqsClientMock.reset();
   });
 
   it('should succeed when all parameters are provided', async () => {
-    const sqsMock = new AWS.SQS();
-    const create = () => new SqsHandler(sqsMock, 'https://fake-queue');
+    const create = () =>
+      new SQSHandler<Record<string, string>>(
+        sqsClientMock as unknown as SQSClient,
+        'https://fake-queue'
+      );
 
-    expect(create).to.not.throw();
+    expect(create).not.throw();
   });
 });

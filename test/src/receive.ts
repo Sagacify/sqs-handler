@@ -1,50 +1,42 @@
 import { expect } from 'chai';
-import AWS from 'aws-sdk';
-import AWSMock from 'aws-sdk-mock';
-import sinon from 'sinon';
+import { SQSClient, ReceiveMessageCommand } from '@aws-sdk/client-sqs';
+import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
 import sqsMessages from '../mocks/sqsMessages';
-import { SqsHandler } from '../../src/SqsHandler';
+import { SQSHandler } from '../../src/SQSHandler';
 
-import type { Callback } from '../../types/base';
-
-describe('SqsHandler.receive', () => {
-  let sandbox: sinon.SinonSandbox;
+describe('SQSHandler.receive', () => {
+  let sqsClientMock: AwsClientStub<SQSClient>;
 
   beforeEach(() => {
-    AWSMock.setSDKInstance(AWS);
-    sandbox = sinon.createSandbox();
-  });
-
-  afterEach(() => {
-    AWSMock.restore();
-    sandbox.restore();
+    const sqsClient = new SQSClient({});
+    sqsClientMock = mockClient(sqsClient);
   });
 
   it('should receive several message with Body & MessageAttributes parsed', async () => {
-    const receiveMessageSpy = sandbox.spy((_params, callback: Callback<any>) => {
-      callback(null, { Messages: sqsMessages.in });
+    sqsClientMock.on(ReceiveMessageCommand).resolvesOnce({
+      Messages: sqsMessages.unparsed
     });
-    AWSMock.mock('SQS', 'receiveMessage', receiveMessageSpy);
 
-    const sqsMock = new AWS.SQS();
-    const sqsHandler = new SqsHandler(sqsMock, 'https://fake-queue', {
-      VisibilityTimeout: 120,
-      WaitTimeSeconds: 10
-    });
+    const sqsHandler = new SQSHandler<Record<string, string>>(
+      sqsClientMock as unknown as SQSClient,
+      'https://fake-queue',
+      {
+        VisibilityTimeout: 120,
+        WaitTimeSeconds: 10
+      }
+    );
 
     const messages = await sqsHandler.receive({
       MaxNumberOfMessages: 2
     });
 
-    const spyCall = receiveMessageSpy.getCall(0);
-
-    expect(spyCall.args[0]).to.deep.equal({
+    expect(sqsClientMock.commandCalls(ReceiveMessageCommand).length).equal(1);
+    expect(sqsClientMock.commandCalls(ReceiveMessageCommand)[0].args[0].input).deep.equal({
       QueueUrl: 'https://fake-queue',
       MaxNumberOfMessages: 2,
       VisibilityTimeout: 120,
       WaitTimeSeconds: 10
     });
-
-    expect(messages).to.deep.equal(sqsMessages.out);
+    expect(messages).deep.equal(sqsMessages.parsed);
   });
 });

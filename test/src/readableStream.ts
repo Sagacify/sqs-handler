@@ -1,39 +1,36 @@
 import { expect } from 'chai';
 import { Readable } from 'stream';
-import AWS from 'aws-sdk';
-import AWSMock from 'aws-sdk-mock';
-import sinon from 'sinon';
-import readMessagesFixture from '../fixtures/readMessages';
+import { SQSClient, DeleteMessageCommand, ReceiveMessageCommand } from '@aws-sdk/client-sqs';
+import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
 import sqsMessages from '../mocks/sqsMessages';
-import { SqsHandler } from '../../src/SqsHandler';
+import { SQSHandler } from '../../src/SQSHandler';
 
-describe('SqsHandler.readableStream', () => {
-  let sandbox: sinon.SinonSandbox;
+describe('SQSHandler.readableStream', () => {
+  let sqsClientMock: AwsClientStub<SQSClient>;
 
   beforeEach(() => {
-    AWSMock.setSDKInstance(AWS);
-    sandbox = sinon.createSandbox();
-  });
-
-  afterEach(() => {
-    AWSMock.restore();
-    sandbox.restore();
+    const sqsClient = new SQSClient({});
+    sqsClientMock = mockClient(sqsClient);
   });
 
   it('should returns a Readable', () => {
-    const sqsMock = new AWS.SQS();
-    const sqsHandler = new SqsHandler(sqsMock, 'https://fake-queue');
+    const sqsHandler = new SQSHandler<Record<string, string>>(
+      sqsClientMock as unknown as SQSClient,
+      'https://fake-queue'
+    );
     expect(sqsHandler.readableStream()).instanceOf(Readable);
   });
 
   it('should receive message', async () => {
-    AWSMock.mock('SQS', 'receiveMessage', readMessagesFixture());
-    AWSMock.mock('SQS', 'deleteMessage', () => {
-      /* noop */
+    sqsClientMock.on(ReceiveMessageCommand).resolvesOnce({
+      Messages: sqsMessages.unparsed
     });
+    sqsClientMock.on(DeleteMessageCommand).resolves({});
+    const sqsHandler = new SQSHandler<Record<string, string>>(
+      sqsClientMock as unknown as SQSClient,
+      'https://fake-queue'
+    );
 
-    const sqsMock = new AWS.SQS();
-    const sqsHandler = new SqsHandler(sqsMock, 'https://fake-queue');
     const readable = sqsHandler.readableStream();
 
     // Stream never stop by default, need to destroy it after first read
@@ -42,18 +39,22 @@ describe('SqsHandler.readableStream', () => {
     });
     readable.destroy();
 
-    expect(message).to.deep.equals(sqsMessages.out[0]);
+    expect(message).deep.equals(sqsMessages.parsed[0]);
+    // Should not delete message by default
+    expect(sqsClientMock.commandCalls(DeleteMessageCommand).length).equal(0);
   });
 
   it('should receive messages continuously when autoClose is not set', async () => {
-    AWSMock.mock('SQS', 'receiveMessage', readMessagesFixture(true));
-    AWSMock.mock('SQS', 'deleteMessage', () => {
-      /* noop */
+    sqsClientMock.on(ReceiveMessageCommand).resolves({
+      Messages: sqsMessages.unparsed
     });
+    sqsClientMock.on(DeleteMessageCommand).resolves({});
+    const sqsHandler = new SQSHandler<Record<string, string>>(
+      sqsClientMock as unknown as SQSClient,
+      'https://fake-queue'
+    );
 
-    const sqsMock = new AWS.SQS();
-    const sqsHandler = new SqsHandler(sqsMock, 'https://fake-queue');
-    const readable = sqsHandler.readableStream({ MaxNumberOfMessages: 1 });
+    const readable = sqsHandler.readableStream({ MaxNumberOfMessages: 2 });
     const messages: unknown[] = [];
 
     await new Promise((resolve) => {
@@ -67,19 +68,29 @@ describe('SqsHandler.readableStream', () => {
       });
     });
 
-    expect(messages).to.have.lengthOf(100);
-    expect(messages).to.deep.includes(sqsMessages.out[0]);
-    expect(messages).to.deep.includes(sqsMessages.out[1]);
+    expect(messages).have.lengthOf(100);
+    expect(messages).deep.includes(sqsMessages.parsed[0]);
+    expect(messages).deep.includes(sqsMessages.parsed[1]);
   });
 
   it('should receive all message and close the stream when autoClose is set', async () => {
-    AWSMock.mock('SQS', 'receiveMessage', readMessagesFixture());
-    AWSMock.mock('SQS', 'deleteMessage', () => {
-      /* noop */
-    });
+    sqsClientMock
+      .on(ReceiveMessageCommand)
+      .resolvesOnce({
+        Messages: [sqsMessages.unparsed[0]]
+      })
+      .resolvesOnce({
+        Messages: [sqsMessages.unparsed[1]]
+      })
+      .resolvesOnce({
+        Messages: []
+      });
 
-    const sqsMock = new AWS.SQS();
-    const sqsHandler = new SqsHandler(sqsMock, 'https://fake-queue');
+    const sqsHandler = new SQSHandler<Record<string, string>>(
+      sqsClientMock as unknown as SQSClient,
+      'https://fake-queue'
+    );
+
     const readable = sqsHandler.readableStream({ autoClose: true });
     const messages: unknown[] = [];
 
@@ -88,27 +99,25 @@ describe('SqsHandler.readableStream', () => {
       readable.on('close', resolve);
     });
 
-    expect(messages).to.deep.equals(sqsMessages.out);
+    expect(messages).deep.equals(sqsMessages.parsed);
   });
 
   it('should destroy message when autoDestroy is set', async () => {
-    const readMessagesSpy = sinon.spy(readMessagesFixture());
-    AWSMock.mock('SQS', 'receiveMessage', readMessagesSpy);
-    AWSMock.mock('SQS', 'deleteMessage', () => {
-      /* noop */
+    sqsClientMock.on(ReceiveMessageCommand).resolves({
+      Messages: sqsMessages.unparsed
     });
-
-    const sqsMock = new AWS.SQS();
-    const sqsHandler = new SqsHandler(sqsMock, 'https://fake-queue');
-    const readable = sqsHandler.readableStream({ autoClose: true, MaxNumberOfMessages: 10 });
+    sqsClientMock.on(DeleteMessageCommand).resolves({});
+    const sqsHandler = new SQSHandler<Record<string, string>>(
+      sqsClientMock as unknown as SQSClient,
+      'https://fake-queue'
+    );
+    const readable = sqsHandler.readableStream({ autoDestroy: true });
 
     await new Promise((resolve) => {
       readable.on('data', resolve);
     });
-
     readable.destroy();
-    sandbox.restore();
 
-    expect(readMessagesSpy.callCount).equals(1);
+    expect(sqsClientMock.commandCalls(DeleteMessageCommand).length).equal(1);
   });
 });
