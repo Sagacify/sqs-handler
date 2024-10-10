@@ -1,3 +1,10 @@
+## [3.0.2](https://github.com/Sagacify/sqs-handler/compare/v3.0.1...v3.0.2) (2024-10-10)
+
+
+### Bug Fixes
+
+* **receive-one:** add missing options ([c003d16](https://github.com/Sagacify/sqs-handler/commit/c003d16707a267dbdf11940a44421c85c141292e))
+
 ## [3.0.1](https://github.com/Sagacify/sqs-handler/compare/v3.0.0...v3.0.1) (2024-10-10)
 
 
