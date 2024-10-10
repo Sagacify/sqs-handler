@@ -1,3 +1,15 @@
+# [3.0.0](https://github.com/Sagacify/sqs-handler/compare/v2.0.1...v3.0.0) (2024-10-10)
+
+
+### Features
+
+* upgrade AWS sdk to v3 ([a9b8790](https://github.com/Sagacify/sqs-handler/commit/a9b8790138ae1b335d985c0988113ffe8149d3be))
+
+
+### BREAKING CHANGES
+
+* SQSHandler constructor takes a SQSClient from AWS sdk v3 now
+
 ## [2.0.1](https://github.com/Sagacify/sqs-handler/compare/v2.0.0...v2.0.1) (2022-06-04)
 
 
