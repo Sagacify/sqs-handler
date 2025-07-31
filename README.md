@@ -2,6 +2,9 @@
 
 [![Coverage Status](https://coveralls.io/repos/github/Sagacify/sqs-handler/badge.svg?branch=master)](https://coveralls.io/github/Sagacify/sqs-handler?branch=master)
 [![npm version](https://img.shields.io/npm/v/@sagacify/sqs-handler.svg)](https://www.npmjs.com/package/@sagacify/sqs-handler)
+[![Issues](https://img.shields.io/github/issues/Sagacify/s3-handler)](https://www.npmjs.com/package/@sagacify/s3-handler)
+[![License](https://img.shields.io/github/license/Sagacify/s3-handler)](https://www.npmjs.com/package/@sagacify/s3-handler)
+[![Stars](https://img.shields.io/github/stars/Sagacify/s3-handler)](https://www.npmjs.com/package/@sagacify/s3-handler)
 
 ## Description
 
@@ -19,6 +22,7 @@ $ npm install @sagacify/sqs-handler
 ## Usage
 
 ### Import in your project
+
 ```js
 import { SQSClient } from '@aws-sdk/client-sqs';
 import { SQSHandler } from '@sagacify/sqs-handler';
@@ -27,7 +31,8 @@ const sqsClient = new SQSClient({ region: 'eu-west-1'});
 
 const sqsHandler = new SQSHandler<{ data: string }>(
   sqsClient,
-  'https://sqs.eu-west-1.amazonaws.com/23452042942/some-sqs-queue', {
+  'https://sqs.eu-west-1.amazonaws.com/23452042942/some-sqs-queue',
+  {
     VisibilityTimeout: 120,
     WaitTimeSeconds: 0
   }
@@ -93,21 +98,40 @@ await sqsHandler.destroyBatch([
 ]);
 ```
 
+There is a second way to create your handler.
+The static method `createHandler` will allow you to remove the instantiation of the Client on your code. This will use `@aws-sdk/client-sqs` under the hood.
+
+```js
+import { SQSHandler } from '@sagacify/sqs-handler';
+
+const sqsHandler =
+  SQSHandler.createHandler <
+  { data: string } >
+  ({ region: 'eu-west-1' },
+  'https://sqs.eu-west-1.amazonaws.com/23452042942/some-sqs-queue',
+  {
+    VisibilityTimeout: 120,
+    WaitTimeSeconds: 0
+  });
+```
+
 ### Readable Stream Usage
 
 ```js
 import { SQSClient } from '@aws-sdk/client-sqs';
 import { SQSHandler } from '@sagacify/sqs-handler';
 
-const sqsClient = new SQSClient({ region: 'eu-west-1'});
+const sqsClient = new SQSClient({ region: 'eu-west-1' });
 
-const sqsHandler = new SQSHandler<{ data: string }>(
-  sqsClient,
-  'https://sqs.eu-west-1.amazonaws.com/23452042942/some-sqs-queue', {
+const sqsHandler =
+  new SQSHandler() <
+  { data: string } >
+  (sqsClient,
+  'https://sqs.eu-west-1.amazonaws.com/23452042942/some-sqs-queue',
+  {
     VisibilityTimeout: 120,
     WaitTimeSeconds: 0
-  }
-);
+  });
 
 const readable = sqsHandler.readableStream();
 
@@ -157,48 +181,48 @@ writable.write({
 
 Equivalent of [ReceiveMessageCommand](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/sqs/command/ReceiveMessageCommand) with automatique parsing.
 
-*Options differences:*
+_Options differences:_
 
- - QueueUrl: useless, SQSHandler.queueUrl will be used instead
- - VisibilityTimeout: SQSHandler.visibilityTimeout will be used instead
- - WaitTimeSeconds: SQSHandler.waitTimeSeconds will be used instead
+- QueueUrl: useless, SQSHandler.queueUrl will be used instead
+- VisibilityTimeout: SQSHandler.visibilityTimeout will be used instead
+- WaitTimeSeconds: SQSHandler.waitTimeSeconds will be used instead
 
- *Response differrences:*
+_Response differrences:_
 
- - Messages: Content of Messages is directly returned as an Array.
- - Messages[].Body: automatically JSON parsed
- - Messages[].MessageAttributes: automatically parsed as simple object with the right type
+- Messages: Content of Messages is directly returned as an Array.
+- Messages[].Body: automatically JSON parsed
+- Messages[].MessageAttributes: automatically parsed as simple object with the right type
 
- **receiveOne(options)**
+**receiveOne(options)**
 
 Equivalent of [ReceiveMessageCommand](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/sqs/command/ReceiveMessageCommand) for one message with automatique parsing.
 
-*Options differences:*
+_Options differences:_
 
- - QueueUrl: useless, SQSHandler.queueUrl will be used instead
- - VisibilityTimeout: SQSHandler.visibilityTimeout will be used instead
- - WaitTimeSeconds: SQSHandler.waitTimeSeconds will be used instead
- - MaxNumberOfMessages: forced at 1
+- QueueUrl: useless, SQSHandler.queueUrl will be used instead
+- VisibilityTimeout: SQSHandler.visibilityTimeout will be used instead
+- WaitTimeSeconds: SQSHandler.waitTimeSeconds will be used instead
+- MaxNumberOfMessages: forced at 1
 
- *Response differrences:*
+_Response differrences:_
 
- - Messages: Content of Messages[0] directly returned as an Object or null if no messages.
- - Messages[0].Body: automatically JSON parsed
- - Messages[0].MessageAttributes: automatically parsed as simple object with the right type
+- Messages: Content of Messages[0] directly returned as an Object or null if no messages.
+- Messages[0].Body: automatically JSON parsed
+- Messages[0].MessageAttributes: automatically parsed as simple object with the right type
 
 **send(messageBody, options)**
 
 Equivalent of [SendMessageCommand](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/sqs/command/SendMessageCommand) with automatique composition.
 
-*Options differences:*
+_Options differences:_
 
- - QueueUrl: useless, SQSHandler.queueUrl will be used instead
- - VisibilityTimeout: SQSHandler.visibilityTimeout will be used instead
- - WaitTimeSeconds: SQSHandler.waitTimeSeconds will be used instead
- - MessageAttributes: simple object that will be automatically composed in { DataType, StringValue|BinaryValue }
- - MessageBody: taken from messageBody and automatically JSON stringified
+- QueueUrl: useless, SQSHandler.queueUrl will be used instead
+- VisibilityTimeout: SQSHandler.visibilityTimeout will be used instead
+- WaitTimeSeconds: SQSHandler.waitTimeSeconds will be used instead
+- MessageAttributes: simple object that will be automatically composed in { DataType, StringValue|BinaryValue }
+- MessageBody: taken from messageBody and automatically JSON stringified
 
- *Response differrences:*
+_Response differrences:_
 
 (None)
 
@@ -206,15 +230,15 @@ Equivalent of [SendMessageCommand](https://docs.aws.amazon.com/AWSJavaScriptSDK/
 
 Equivalent of [SendMessageBatchCommand](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/sqs/command/SendMessageBatchCommand) with automatique composition.
 
-*Options differences:*
+_Options differences:_
 
- - entries[].QueueUrl: useless, SQSHandler.queueUrl will be used instead
- - entries[].VisibilityTimeout: SQSHandler.visibilityTimeout will be used instead
- - entries[].WaitTimeSeconds: SQSHandler.waitTimeSeconds will be used instead
- - entries[].MessageAttributes: simple object that will be automatically composed in { DataType, StringValue|BinaryValue }
- - entries[].MessageBody: taken from messageBody and automatically JSON stringified
+- entries[].QueueUrl: useless, SQSHandler.queueUrl will be used instead
+- entries[].VisibilityTimeout: SQSHandler.visibilityTimeout will be used instead
+- entries[].WaitTimeSeconds: SQSHandler.waitTimeSeconds will be used instead
+- entries[].MessageAttributes: simple object that will be automatically composed in { DataType, StringValue|BinaryValue }
+- entries[].MessageBody: taken from messageBody and automatically JSON stringified
 
- *Response differrences:*
+_Response differrences:_
 
 (None)
 
@@ -222,13 +246,13 @@ Equivalent of [SendMessageBatchCommand](https://docs.aws.amazon.com/AWSJavaScrip
 
 Equivalent of [DeleteMessageCommand](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/sqs/command/DeleteMessageCommand) with automatique composition.
 
-*Options differences:*
+_Options differences:_
 
- - QueueUrl: useless, SQSHandler.queueUrl will be used instead
- - VisibilityTimeout: SQSHandler.visibilityTimeout will be used instead
- - WaitTimeSeconds: SQSHandler.waitTimeSeconds will be used instead
+- QueueUrl: useless, SQSHandler.queueUrl will be used instead
+- VisibilityTimeout: SQSHandler.visibilityTimeout will be used instead
+- WaitTimeSeconds: SQSHandler.waitTimeSeconds will be used instead
 
- *Response differrences:*
+_Response differrences:_
 
 (None)
 
@@ -236,13 +260,13 @@ Equivalent of [DeleteMessageCommand](https://docs.aws.amazon.com/AWSJavaScriptSD
 
 Equivalent of [DeleteMessageBatchCommand](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/sqs/command/DeleteMessageBatchCommand) with automatique composition.
 
-*Options differences:*
+_Options differences:_
 
- - entries[].QueueUrl: useless, SQSHandler.queueUrl will be used instead
- - entries[].VisibilityTimeout: SQSHandler.visibilityTimeout will be used instead
- - entries[].WaitTimeSeconds: SQSHandler.waitTimeSeconds will be used instead
+- entries[].QueueUrl: useless, SQSHandler.queueUrl will be used instead
+- entries[].VisibilityTimeout: SQSHandler.visibilityTimeout will be used instead
+- entries[].WaitTimeSeconds: SQSHandler.waitTimeSeconds will be used instead
 
- *Response differrences:*
+_Response differrences:_
 
 (None)
 
@@ -258,9 +282,9 @@ For queue related operations use directly the SQS instance.
 returns a readable stream from the SQS queue.
 Each message received from the queue will trigger the `data` event.
 
-*Options:*
+_Options:_
 
-- autoDestroy: automatically destroy received message from the queue once pushed to the stream buffer, if set to false you will have to destroy the message yourself otherwise it will be available to be consumed after the *visibilityTimeout* (default: false)
+- autoDestroy: automatically destroy received message from the queue once pushed to the stream buffer, if set to false you will have to destroy the message yourself otherwise it will be available to be consumed after the _visibilityTimeout_ (default: false)
 - autoClose: automatically close the stream when no more message are received from the queue (default: false)
 
 see **receive** for other options details.
@@ -270,7 +294,7 @@ see **receive** for other options details.
 returns a writable stream to the SQS queue.
 Each message written to this stream will be pushed to the queue with the specified options.
 
-*Options:*
+_Options:_
 
 - batchSize: set the number of messages to be sent per batch (default: 1)
 
@@ -310,7 +334,7 @@ This will create a coverage folder with all the report in `coverage/index.html`
 $ npm test:all
 ```
 
-*Note: that's the one you want to use most of the time*
+_Note: that's the one you want to use most of the time_
 
 ## Reporting bugs and contributing
 

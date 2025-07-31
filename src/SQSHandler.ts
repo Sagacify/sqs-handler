@@ -1,20 +1,21 @@
 import { Readable, Writable } from 'stream';
 import {
-  SQSClient,
+  DeleteMessageCommand,
+  DeleteMessageBatchCommand,
   ReceiveMessageCommand,
   SendMessageCommand,
   SendMessageBatchCommand,
-  DeleteMessageCommand,
-  DeleteMessageBatchCommand
+  SQSClient
 } from '@aws-sdk/client-sqs';
 
 import type {
+  DeleteMessageBatchRequestEntry,
   Message,
   MessageAttributeValue,
   ReceiveMessageCommandInput,
-  SendMessageCommandInput,
   SendMessageBatchRequestEntry,
-  DeleteMessageBatchRequestEntry
+  SendMessageCommandInput,
+  SQSClientConfig
 } from '@aws-sdk/client-sqs';
 
 export type SQSOptions = { VisibilityTimeout?: number; WaitTimeSeconds?: number };
@@ -49,6 +50,13 @@ export type SqsWritableOptions = SendOptions & {
   batchSize?: number;
 };
 
+type SQSHandlerOptions =
+  | {
+      VisibilityTimeout?: number;
+      WaitTimeSeconds?: number;
+    }
+  | undefined;
+
 export class SQSHandler<ParsedBody> {
   private readonly client: SQSClient;
   private readonly queueUrl: string;
@@ -58,12 +66,27 @@ export class SQSHandler<ParsedBody> {
   constructor(
     sqsClient: SQSClient,
     queueUrl: string,
-    { VisibilityTimeout = 60, WaitTimeSeconds = 0 } = {}
+    { VisibilityTimeout = 60, WaitTimeSeconds = 0 }: SQSHandlerOptions = {}
   ) {
     this.client = sqsClient;
     this.queueUrl = queueUrl;
     this.visibilityTimeout = VisibilityTimeout;
     this.waitTimeSeconds = WaitTimeSeconds;
+  }
+
+  /**
+   * **Note:** *Credentials can be loaded from the* `~/.aws/config` *file in development*
+   * @param sqsOptions - Optional configuration for the SQS client
+   * @param queueUrl - The URL of the SQS queue
+   * @param handlerOptions - Optional configuration for the SQS handler
+   * @returns an instance of `SQSHandler`
+   */
+  static createHandler<ParsedBody>(
+    sqsOptions: SQSClientConfig = {},
+    queueUrl: string,
+    handlerOptions?: SQSHandlerOptions
+  ): SQSHandler<ParsedBody> {
+    return new this(new SQSClient(sqsOptions), queueUrl, handlerOptions);
   }
 
   static composeMessageAttributes(
