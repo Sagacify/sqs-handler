@@ -1,3 +1,10 @@
+# [3.1.0](https://github.com/Sagacify/sqs-handler/compare/v3.0.2...v3.1.0) (2025-07-31)
+
+
+### Features
+
+* **create-handler:** add static method to avoid double import of client ([16f19e2](https://github.com/Sagacify/sqs-handler/commit/16f19e2a76dd0fe66ff9a54eb4a450334113553e))
+
 ## [3.0.2](https://github.com/Sagacify/sqs-handler/compare/v3.0.1...v3.0.2) (2024-10-10)
 
 
